@@ -49,6 +49,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.pager.content = m.list.list.SelectedItem().(item).desc
 				m.pager.setViewportContent()
 				m.pager, cmd = m.pager.update(cmd, msg)
+			} else if key.Matches(msg, Keymap.Filter) && m.list.state == listNormal {
+				m.list.state = listFiltering
+				m.list, cmd = m.list.update(cmd, msg)
 			} else {
 				m.list, cmd = m.list.update(cmd, msg)
 			}
