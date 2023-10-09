@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -25,54 +28,44 @@ type model struct {
 	pager pagerModel
 }
 
-var cmd tea.Cmd
-
 func (m model) Init() tea.Cmd {
 	return nil
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		windowSize = msg
 		m.list.list.SetSize(msg.Width, msg.Height)
 		m.pager.setSize(msg.Width, msg.Height)
+
 	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, Keymap.Enter):
-			if m.state == stateList {
+		switch m.state {
+		case stateList:
+			if key.Matches(msg, Keymap.Enter) && m.list.state == listNormal {
 				m.state = statePager
 				m.pager.title = m.list.list.SelectedItem().(item).title
 				m.pager.content = m.list.list.SelectedItem().(item).desc
 				m.pager.setViewportContent()
-				_, cmd = m.pager.update(msg)
-				m.list.update(msg)
-				return m, cmd
+				m.pager, cmd = m.pager.update(cmd, msg)
+			} else {
+				m.list, cmd = m.list.update(cmd, msg)
 			}
 
-		case key.Matches(msg, Keymap.Back):
-			if m.state == statePager {
+		case statePager:
+			if key.Matches(msg, Keymap.Back) {
 				m.state = stateList
 				m.pager.viewport.SetContent("")
 				m.pager.viewport.YOffset = 0
-				return m, nil
+				m.pager, cmd = m.pager.update(cmd, msg)
+			} else {
+				m.pager, cmd = m.pager.update(cmd, msg)
 			}
-
-		case key.Matches(msg, Keymap.Quit):
-			return m, tea.Quit
-
-		default:
-			switch m.state {
-			case stateList:
-				m.list, cmd = m.list.update(msg)
-			case statePager:
-				m.pager, cmd = m.pager.update(msg)
-			}
-			return m, cmd
 		}
 	}
 
-	return m, nil
+	return m, cmd
 }
 
 func (m model) View() string {
@@ -85,11 +78,14 @@ func (m model) View() string {
 }
 
 func main() {
-	m := model{}
-	m.list = m.list.init()
-	m.pager = pagerModel{}
-	p := tea.NewProgram(m)
+	m := model{
+		state: stateList,
+		list:  initList(),
+		pager: pagerModel{},
+	}
+	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		panic(err)
+		fmt.Println("could not run program:", err)
+		os.Exit(1)
 	}
 }

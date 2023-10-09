@@ -29,8 +29,7 @@ func (p *pagerModel) setViewportContent() {
 	p.viewport.SetContent(str)
 }
 
-func (p pagerModel) update(msg tea.Msg) (pagerModel, tea.Cmd) {
-	var cmd tea.Cmd
+func (p pagerModel) update(cmd tea.Cmd, msg tea.Msg) (pagerModel, tea.Cmd) {
 	p.viewport, cmd = p.viewport.Update(msg)
 	return p, cmd
 }

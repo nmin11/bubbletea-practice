@@ -1,18 +1,25 @@
 package main
 
 import (
-	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
-var (
-	logoStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#ECFD65")).
-			Background(fuchsia).
-			Bold(true)
+type listState int
 
+const (
+	listNormal listState = iota
+	listFiltering
+)
+
+func (s listState) String() string {
+	return map[listState]string{
+		listNormal:    "list normal",
+		listFiltering: "list filtering",
+	}[s]
+}
+
+var (
 	items = []list.Item{
 		item{title: "Raspberry Pi’s", desc: "I have ’em all over my house"},
 		item{title: "Nutella", desc: "It's good on toast"},
@@ -49,26 +56,22 @@ func (i item) Description() string { return i.desc }
 func (i item) FilterValue() string { return i.title }
 
 type listModel struct {
-	list list.Model
+	state listState
+	list  list.Model
 }
 
-func (l listModel) init() listModel {
-	l = listModel{
+func initList() listModel {
+	l := listModel{
 		list: list.New(items, list.NewDefaultDelegate(), 0, 0),
 	}
 	top, right, bottom, left := docStyle.GetMargin()
 	l.list.SetSize(windowSize.Width-left-right, windowSize.Height-top-bottom)
 	l.list.Title = "My favorite things"
-	l.list.AdditionalShortHelpKeys = func() []key.Binding {
-		return []key.Binding{
-			Keymap.Enter,
-		}
-	}
+
 	return l
 }
 
-func (l listModel) update(msg tea.Msg) (listModel, tea.Cmd) {
-	var cmd tea.Cmd
+func (l listModel) update(cmd tea.Cmd, msg tea.Msg) (listModel, tea.Cmd) {
 	l.list, cmd = l.list.Update(msg)
 	return l, cmd
 }
